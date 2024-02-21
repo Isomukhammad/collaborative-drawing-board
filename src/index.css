@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.custom-input {
+  @apply w-full appearance-none rounded border px-3 py-2 leading-tight text-gray-700 shadow focus:outline-blue-600;
+}
+
+.custom-button {
+  @apply w-full rounded bg-blue-600 px-4 py-2 font-bold text-white hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50;
+}

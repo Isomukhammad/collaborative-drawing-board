@@ -16,7 +16,6 @@ import {
   SetStateAction,
   forwardRef,
   useEffect,
-  useImperativeHandle,
   useRef,
 } from "react";
 
@@ -54,7 +53,7 @@ const Whiteboard = forwardRef<Konva.Transformer, WhiteboardProps>(
         `boards/${boardId}/shapes`,
       );
 
-      const handleShapeAdded = async (snapshot): Promise<void> => {
+      const handleShapeAdded = async (): Promise<void> => {
         try {
           const allShapes = await getShapesOfBoard(String(boardId)).then(
             (res) => res.sort((a, b) => a.createdAt - b.createdAt),
@@ -91,7 +90,7 @@ const Whiteboard = forwardRef<Konva.Transformer, WhiteboardProps>(
         off(shapesRef, "child_changed", handleShapeChanged);
         off(shapesRef, "child_removed", handleShapeRemoved);
       };
-    }, []);
+    }, [boardId]);
 
     const updateShape = (shapeType, updateFunc) => {
       const shape = shapes.find(

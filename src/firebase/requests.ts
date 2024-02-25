@@ -33,7 +33,7 @@ export const getBoards = async (): Promise<IBoard[]> => {
   }));
 };
 
-export const getShapesOfBoard = async (boardId: string): Promise<any> => {
+export const getShapesOfBoard = async (boardId: string) => {
   if (!boardId) throw new Error("Board id is required");
 
   const boardRef = ref(realtimeDatabase, `boards/${boardId}`);

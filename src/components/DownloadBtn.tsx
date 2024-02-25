@@ -2,7 +2,7 @@ import Konva from "konva";
 
 import { JSX, forwardRef } from "react";
 
-const DownloadBtn = forwardRef<Konva.Stage, {}>(({}, ref): JSX.Element => {
+const DownloadBtn = forwardRef<Konva.Stage>((props, ref): JSX.Element => {
   const handleExport = (): void => {
     if (!ref.current) return;
     const dataUrl = ref.current.toDataURL();

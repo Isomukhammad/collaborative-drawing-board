@@ -33,7 +33,7 @@ const NameModal = (): JSX.Element | null => {
             required={true}
             className={"custom-input"}
           />
-          <button type={"button"} className={"custom-button"}>
+          <button type={"submit"} className={"custom-button"}>
             Continue
           </button>
         </form>

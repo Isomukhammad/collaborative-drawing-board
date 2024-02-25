@@ -64,7 +64,7 @@ const Whiteboard = forwardRef<Konva.Transformer, WhiteboardProps>(
         }
       };
 
-      const handleShapeChanged = (snapshot) => {
+      const handleShapeChanged = (snapshot: any) => {
         const updatedShape = snapshot.val();
         setShapes((prevShapes) =>
           prevShapes.map((shape) =>
@@ -73,7 +73,7 @@ const Whiteboard = forwardRef<Konva.Transformer, WhiteboardProps>(
         );
       };
 
-      const handleShapeRemoved = (snapshot) => {
+      const handleShapeRemoved = (snapshot: any) => {
         const removedShapeId = snapshot.key;
         const newShapes = shapes.filter(
           (shape) => shape.id !== removedShapeId,
@@ -92,17 +92,21 @@ const Whiteboard = forwardRef<Konva.Transformer, WhiteboardProps>(
       };
     }, [boardId]);
 
-    const updateShape = (shapeType, updateFunc) => {
+    const updateShape = (
+      updateFunc: (
+        shape: IRectangle | ICircle | ILine,
+      ) => IRectangle | ICircle | ILine,
+    ) => {
       const shape = shapes.find(
         (shape) => shape.id === currentShapeId.current,
-      ) as typeof shapeType;
+      ) as IRectangle | ICircle | ILine;
       setShapes((prevShapes) => {
         const index = prevShapes.findIndex(
           (shape) => shape.id === currentShapeId.current,
         );
-        const newShapes = [...prevShapes];
+        const newShapes: (IRectangle | ICircle | ILine)[] = [...prevShapes];
         newShapes[index] = updateFunc(newShapes[index]);
-        return newShapes;
+        return newShapes as IRectangle[] | ICircle[] | ILine[];
       });
       createShape(String(boardId), shape.id, shape);
     };
@@ -112,13 +116,15 @@ const Whiteboard = forwardRef<Konva.Transformer, WhiteboardProps>(
       const stage = stageRef.current;
       if (stage) {
         if (instrument.name !== "eraser") {
-          const { x, y } = stage.getPointerPosition();
+          const pointerPosition = stage.getPointerPosition();
+          if (!pointerPosition) return;
+          const { x, y } = pointerPosition;
           const id = uuidv4();
 
           currentShapeId.current = id;
           isDrawing.current = true;
 
-          let newShape;
+          let newShape: IRectangle | ICircle | ILine;
           switch (instrument.name) {
             case "square":
               newShape = {
@@ -148,7 +154,10 @@ const Whiteboard = forwardRef<Konva.Transformer, WhiteboardProps>(
             case "pencil":
               newShape = {
                 id,
+                x,
+                y,
                 points: [x, y],
+                color: fillColor,
                 stroke: fillColor,
                 fill: fillColor,
                 shape: "line",
@@ -159,7 +168,13 @@ const Whiteboard = forwardRef<Konva.Transformer, WhiteboardProps>(
               return;
           }
 
-          setShapes((prevShapes) => [...prevShapes, newShape]);
+          setShapes((prevShapes: (IRectangle | ICircle | ILine)[]) => {
+            const newShapes: (IRectangle | ICircle | ILine)[] = [
+              ...prevShapes,
+              newShape,
+            ];
+            return newShapes as IRectangle[] | ICircle[] | ILine[];
+          });
         } else {
           const shapePointer = stage.getPointerPosition() as Konva.Vector2d;
           const shape = stage.getIntersection(shapePointer);
@@ -177,7 +192,9 @@ const Whiteboard = forwardRef<Konva.Transformer, WhiteboardProps>(
       const stage = stageRef.current;
       if (!stage) return;
       if (instrument.name === "eraser") return;
-      const { x, y } = stage.getPointerPosition();
+      const pointerPosition = stage.getPointerPosition();
+      if (!pointerPosition) return;
+      const { x, y } = pointerPosition;
 
       switch (instrument.name) {
         case "square":
@@ -191,11 +208,11 @@ const Whiteboard = forwardRef<Konva.Transformer, WhiteboardProps>(
               width: x - newShapes[index].x,
               height: y - newShapes[index].y,
             };
-            return newShapes;
+            return newShapes as IRectangle[];
           });
           break;
         case "circle":
-          setShapes((prevShapes) => {
+          setShapes((prevShapes: (IRectangle | ICircle | ILine)[]) => {
             const index = prevShapes.findIndex(
               (shape) => shape.id === currentShapeId.current,
             );
@@ -207,7 +224,7 @@ const Whiteboard = forwardRef<Konva.Transformer, WhiteboardProps>(
                   Math.pow(y - newShapes[index].y, 2),
               ),
             };
-            return newShapes;
+            return newShapes as ICircle[];
           });
           break;
         case "pencil":
@@ -215,7 +232,7 @@ const Whiteboard = forwardRef<Konva.Transformer, WhiteboardProps>(
             const index = prevShapes.findIndex(
               (shape) => shape.id === currentShapeId.current,
             );
-            const newShapes = [...prevShapes];
+            const newShapes = [...prevShapes] as ILine[];
             newShapes[index] = {
               ...newShapes[index],
               points: [...newShapes[index].points, x, y],
@@ -234,9 +251,15 @@ const Whiteboard = forwardRef<Konva.Transformer, WhiteboardProps>(
       const stage = stageRef.current;
       if (!stage) return;
       if (instrument.name === "eraser") return;
-      const { x, y } = stage.getPointerPosition();
+      const pointerPosition = stage.getPointerPosition();
+      if (!pointerPosition) return;
+      const { x, y } = pointerPosition;
 
-      const shapeUpdates = {
+      const shapeUpdates: {
+        [key: string]: (
+          shape: IRectangle | ICircle | ILine,
+        ) => IRectangle | ICircle | ILine;
+      } = {
         square: (shape) => ({
           ...shape,
           width: x - shape.x,
@@ -248,11 +271,16 @@ const Whiteboard = forwardRef<Konva.Transformer, WhiteboardProps>(
             Math.pow(x - shape.x, 2) + Math.pow(y - shape.y, 2),
           ),
         }),
-        pencil: (shape) => ({ ...shape, points: [...shape.points, x, y] }),
+        pencil: (shape: IRectangle | ICircle | ILine) => {
+          if ("points" in shape) {
+            return { ...shape, points: [...shape.points, x, y] };
+          }
+          return shape;
+        },
       };
 
       if (shapeUpdates[instrument.name]) {
-        updateShape(instrument.name, shapeUpdates[instrument.name]);
+        updateShape(shapeUpdates[instrument.name]);
       }
 
       isDrawing.current = false;
@@ -261,7 +289,7 @@ const Whiteboard = forwardRef<Konva.Transformer, WhiteboardProps>(
     const handleClick = (event: Konva.KonvaEventObject<MouseEvent>): void => {
       if (instrument.name !== "select") return;
       const target = event.currentTarget;
-      if (ref.current) {
+      if (ref && typeof ref !== "function" && ref.current) {
         ref.current.nodes([target]);
       }
     };
@@ -290,7 +318,11 @@ const Whiteboard = forwardRef<Konva.Transformer, WhiteboardProps>(
                 width={window.innerWidth}
                 fill="#ffffff"
                 id="bg"
-                onClick={() => ref.current.nodes([])}
+                onClick={() => {
+                  if (ref && typeof ref !== "function" && ref.current) {
+                    ref.current.nodes([]);
+                  }
+                }}
               />
               <Figures
                 instrument={instrument}

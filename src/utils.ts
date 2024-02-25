@@ -1,24 +1,25 @@
 import Konva from "konva";
 
+import { RefObject } from "react";
+
 import { instruments } from "./constant.ts";
 
 interface HandleTransformEndValues {
   instrument: (typeof instruments)[number];
-  whiteboardRef: Konva.Transformer;
+  whiteboardRef: RefObject<Konva.Transformer>;
   boardId: string;
 }
 
 export const handleTransformEnd = ({
   instrument,
   whiteboardRef,
-  boardId,
-}: HandleTransformEndValues): void => {
+}: HandleTransformEndValues) => {
   if (instrument.name !== "select") return;
 
   const transformer = whiteboardRef.current;
   if (!transformer) return;
 
-  const shapeNode = transformer.nodes()[0];
+  const shapeNode = transformer.nodes()[0] as Konva.Shape;
   if (!shapeNode) return;
 
   let updatedShape;
@@ -46,7 +47,7 @@ export const handleTransformEnd = ({
         rotation: shapeNode.rotation(),
         scaleX: shapeNode.scaleX(),
         scaleY: shapeNode.scaleY(),
-        radius: shapeNode.radius() * shapeNode.scaleX(),
+        radius: (shapeNode as Konva.Circle).radius() * shapeNode.scaleX(),
         color: shapeNode.fill(),
         stroke: shapeNode.stroke(),
         shape: "circle",
@@ -55,7 +56,7 @@ export const handleTransformEnd = ({
     case "line":
       updatedShape = {
         id: shapeNode.id(),
-        points: shapeNode.points(),
+        points: (shapeNode as Konva.Line).points(),
         stroke: shapeNode.stroke(),
         fill: shapeNode.fill(),
         shape: "line",

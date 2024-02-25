@@ -16,11 +16,11 @@ const MainPage = (): JSX.Element => {
     const boardsRef = ref(realtimeDatabase, "boards");
 
     getBoards().then((data) => setBoards(data));
-    const handleBoardAdded = (snapshot) => {
+    const handleBoardAdded = (snapshot: any) => {
       const board = { id: snapshot.key, ...snapshot.val() };
       setBoards((prevBoards) => [board, ...prevBoards]);
     };
-    const handleBoardRemoved = (snapshot) => {
+    const handleBoardRemoved = (snapshot: any) => {
       setBoards((prevBoards) =>
         prevBoards.filter((board) => board.id !== snapshot.key),
       );

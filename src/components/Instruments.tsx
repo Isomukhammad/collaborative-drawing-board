@@ -39,7 +39,7 @@ const Instruments = forwardRef<Konva.Transformer, InstrumentsProps>(
                 key={item.id}
                 type={"button"}
                 onClick={() => {
-                  if (ref.current) {
+                  if (ref && "current" in ref && ref.current) {
                     ref.current.nodes([]);
                   }
                   setInstrument(item);

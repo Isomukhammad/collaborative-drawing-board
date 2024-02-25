@@ -50,7 +50,7 @@ export const deleteBoard = async (boardId: string): Promise<void> => {
 
   try {
     await set(child(boardsRef, boardId), null);
-  } catch (error) {
+  } catch (error: any) {
     throw new Error(`Failed to delete board: ${error.message}`);
   }
 };
@@ -59,11 +59,11 @@ export const createShape = async (
   boardId: string,
   uuid: string,
   shape: IRectangle | ICircle | ILine,
-): Promise<IRectangle | ICircle | ILine> => {
+) => {
   const shapesRef = ref(realtimeDatabase, `boards/${boardId}/shapes`);
   try {
     await set(child(shapesRef, uuid), shape);
-  } catch (error) {
+  } catch (error: any) {
     throw new Error(`Failed to create shape: ${error.message}`);
   }
 };

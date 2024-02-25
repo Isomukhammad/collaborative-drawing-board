@@ -4,7 +4,8 @@ export interface IShape {
   y: number;
   color: string;
   stroke: string;
-  shape: "rectangle" | "circle" | "line";
+  shape: "square" | "circle" | "line";
+  createdAt: number;
 }
 
 export interface IRectangle extends IShape {

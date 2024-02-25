@@ -24,7 +24,7 @@ const Modal = (): JSX.Element => {
       setIsLoading(true);
       const boardId = await createBoard(boardName, name);
       navigate(`/board/${boardId}`);
-    } catch (error) {
+    } catch (error: any) {
       setError(error.message);
       console.error(error);
     } finally {

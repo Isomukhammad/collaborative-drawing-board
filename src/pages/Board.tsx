@@ -21,18 +21,6 @@ const BoardPage = (): JSX.Element => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const transformRef = useRef<Konva.Transformer | null>(null);
-  // const handleExport = (): void => {
-  //   if (!stageRef.current) return;
-  //   const dataUrl = stageRef.current.toDataURL();
-  //   if (dataUrl) {
-  //     const link = document.createElement("a");
-  //     link.download = "image.png";
-  //     link.href = dataUrl;
-  //     document.body.appendChild(link);
-  //     link.click();
-  //     document.body.removeChild(link);
-  //   }
-  // };
 
   useEffect(() => {
     const boardsRef = ref(realtimeDatabase, "boards");
@@ -49,7 +37,7 @@ const BoardPage = (): JSX.Element => {
   }, [id, navigate]);
 
   return (
-    <main className={"container mx-auto flex flex-col gap-4 px-5 py-6"}>
+    <main className={"flex flex-col"}>
       <Instruments
         ref={transformRef}
         instrument={instrument}
@@ -65,7 +53,7 @@ const BoardPage = (): JSX.Element => {
         </div>
       )}
       <div
-        className={`aspect-video w-full cursor-pointer overflow-hidden border border-neutral-300 shadow-2xl ${isLoading ? "invisible" : ""}`}
+        className={`aspect-video w-screen cursor-pointer overflow-hidden ${isLoading ? "invisible" : ""}`}
       >
         <Whiteboard
           instrument={instrument}

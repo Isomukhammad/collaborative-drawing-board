@@ -16,6 +16,7 @@ import {
   SetStateAction,
   forwardRef,
   useEffect,
+  useImperativeHandle,
   useRef,
 } from "react";
 
@@ -28,6 +29,7 @@ import {
 } from "../firebase/requests.ts";
 import { useShapes } from "../hooks/useShapes.ts";
 import { ICircle, ILine, IRectangle } from "../types.ts";
+import DownloadBtn from "./DownloadBtn.tsx";
 import Figures from "./Figures.tsx";
 
 interface WhiteboardProps {
@@ -266,37 +268,40 @@ const Whiteboard = forwardRef<Konva.Transformer, WhiteboardProps>(
     };
 
     return (
-      <div
-        className={
-          "aspect-video w-full cursor-pointer overflow-hidden border border-neutral-300 shadow-2xl"
-        }
-      >
-        <Stage
-          ref={stageRef}
-          width={window.innerWidth}
-          height={window.innerHeight}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
+      <>
+        <DownloadBtn ref={stageRef} />
+        <div
+          className={
+            "aspect-video w-screen cursor-pointer overflow-hidden border border-neutral-300 shadow-2xl"
+          }
         >
-          <Layer>
-            <Rect
-              x={0}
-              y={0}
-              height={window.innerHeight}
-              width={window.innerWidth}
-              fill="#ffffff"
-              id="bg"
-              onClick={() => ref.current.nodes([])}
-            />
-            <Figures
-              instrument={instrument}
-              handleClick={handleClick}
-              shapes={shapes}
-            />
-          </Layer>
-        </Stage>
-      </div>
+          <Stage
+            ref={stageRef}
+            width={window.innerWidth}
+            height={window.innerHeight}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+          >
+            <Layer>
+              <Rect
+                x={0}
+                y={0}
+                height={window.innerHeight}
+                width={window.innerWidth}
+                fill="#ffffff"
+                id="bg"
+                onClick={() => ref.current.nodes([])}
+              />
+              <Figures
+                instrument={instrument}
+                handleClick={handleClick}
+                shapes={shapes}
+              />
+            </Layer>
+          </Stage>
+        </div>
+      </>
     );
   },
 );

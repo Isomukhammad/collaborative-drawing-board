@@ -11,7 +11,6 @@ import MainPage from "./pages/Main.tsx";
 const App = (): JSX.Element => {
   return (
     <NameProvider>
-      <Header />
       <Routes>
         <Route path={"/"} element={<MainPage />} />
         <Route path={"/board/:id"} element={<BoardPage />} />

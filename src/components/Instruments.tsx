@@ -1,4 +1,5 @@
 import Konva from "konva";
+import { Link, useNavigate } from "react-router-dom";
 
 import { Dispatch, JSX, SetStateAction, forwardRef } from "react";
 
@@ -27,8 +28,11 @@ const Instruments = forwardRef<Konva.Transformer, InstrumentsProps>(
     ref,
   ): JSX.Element => {
     return (
-      <div className={"flex justify-between font-medium"}>
+      <div className={"flex justify-between p-4 font-medium"}>
         <div className={"flex w-fit gap-3"}>
+          <Link to={"/"} className={"custom-button"}>
+            Go back
+          </Link>
           {instruments.map((item) => {
             return (
               <button

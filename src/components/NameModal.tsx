@@ -1,11 +1,10 @@
-import { Dispatch, FormEvent, JSX, SetStateAction } from "react";
+import { FormEvent, JSX } from "react";
 
-interface NameModalProps {
-  name: string;
-  setName: Dispatch<SetStateAction<string>>;
-}
+import { useName } from "../context/nameContext.tsx";
 
-const NameModal = ({ name, setName }: NameModalProps): JSX.Element | null => {
+const NameModal = (): JSX.Element | null => {
+  const { name, setName } = useName();
+
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const username = (event.target as HTMLFormElement).username.value;

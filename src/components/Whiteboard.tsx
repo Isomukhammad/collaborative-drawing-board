@@ -1,28 +1,110 @@
+import {
+  ref as firebaseRef,
+  off,
+  onChildAdded,
+  onChildChanged,
+  onChildRemoved,
+} from "firebase/database";
 import Konva from "konva";
-import { Layer, Rect, Stage, Transformer } from "react-konva";
+import { Layer, Rect, Stage } from "react-konva";
+import { useParams } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 
-import { JSX, forwardRef, useRef, useState } from "react";
+import {
+  Dispatch,
+  JSX,
+  SetStateAction,
+  forwardRef,
+  useEffect,
+  useRef,
+} from "react";
 
 import { instruments } from "../constant.ts";
-import { ICircle, ILine, IRectangle } from "../reducer.ts";
+import { realtimeDatabase } from "../firebase/firebase.ts";
+import {
+  createShape,
+  getShapesOfBoard,
+  removeShape,
+} from "../firebase/requests.ts";
+import { useShapes } from "../hooks/useShapes.ts";
+import { ICircle, ILine, IRectangle } from "../types.ts";
 import Figures from "./Figures.tsx";
 
 interface WhiteboardProps {
   instrument: (typeof instruments)[number];
   fillColor: string;
   strokeColor: string;
+  setIsLoading: Dispatch<SetStateAction<boolean>>;
 }
 
 const Whiteboard = forwardRef<Konva.Transformer, WhiteboardProps>(
-  ({ instrument, fillColor, strokeColor }, ref): JSX.Element => {
-    const [rectangles, setRectangles] = useState<IRectangle[] | []>([]);
-    const [circles, setCircles] = useState<ICircle[] | []>([]);
-    const [lines, setLines] = useState<ILine[] | []>([]);
+  ({ instrument, fillColor, strokeColor, setIsLoading }, ref): JSX.Element => {
+    const { id: boardId } = useParams();
 
+    const { shapes, setShapes } = useShapes(String(boardId), setIsLoading);
     const stageRef = useRef<Konva.Stage | null>(null);
     const isDrawing = useRef<boolean>(false);
     const currentShapeId = useRef<string>("");
+
+    useEffect(() => {
+      const shapesRef = firebaseRef(
+        realtimeDatabase,
+        `boards/${boardId}/shapes`,
+      );
+
+      const handleShapeAdded = async (snapshot): Promise<void> => {
+        try {
+          const allShapes = await getShapesOfBoard(String(boardId)).then(
+            (res) => res.sort((a, b) => a.createdAt - b.createdAt),
+          );
+          setShapes(allShapes);
+        } catch (error) {
+          console.error("Error fetching shapes:", error);
+        }
+      };
+
+      const handleShapeChanged = (snapshot) => {
+        const updatedShape = snapshot.val();
+        setShapes((prevShapes) =>
+          prevShapes.map((shape) =>
+            shape.id === updatedShape.id ? updatedShape : shape,
+          ),
+        );
+      };
+
+      const handleShapeRemoved = (snapshot) => {
+        const removedShapeId = snapshot.key;
+        const newShapes = shapes.filter(
+          (shape) => shape.id !== removedShapeId,
+        ) as IRectangle[] | ICircle[] | ILine[];
+        setShapes(newShapes);
+      };
+
+      onChildAdded(shapesRef, handleShapeAdded);
+      onChildChanged(shapesRef, handleShapeChanged);
+      onChildRemoved(shapesRef, handleShapeRemoved);
+
+      return () => {
+        off(shapesRef, "child_added", handleShapeAdded);
+        off(shapesRef, "child_changed", handleShapeChanged);
+        off(shapesRef, "child_removed", handleShapeRemoved);
+      };
+    }, []);
+
+    const updateShape = (shapeType, updateFunc) => {
+      const shape = shapes.find(
+        (shape) => shape.id === currentShapeId.current,
+      ) as typeof shapeType;
+      setShapes((prevShapes) => {
+        const index = prevShapes.findIndex(
+          (shape) => shape.id === currentShapeId.current,
+        );
+        const newShapes = [...prevShapes];
+        newShapes[index] = updateFunc(newShapes[index]);
+        return newShapes;
+      });
+      createShape(String(boardId), shape.id, shape);
+    };
 
     const onPointerDown = () => {
       if (instrument.name === "select") return;
@@ -35,56 +117,54 @@ const Whiteboard = forwardRef<Konva.Transformer, WhiteboardProps>(
           currentShapeId.current = id;
           isDrawing.current = true;
 
+          let newShape;
           switch (instrument.name) {
             case "square":
-              setRectangles([
-                ...rectangles,
-                {
-                  id,
-                  x,
-                  y,
-                  width: 0,
-                  height: 0,
-                  color: fillColor,
-                  stroke: strokeColor,
-                },
-              ]);
+              newShape = {
+                id,
+                x,
+                y,
+                width: 0,
+                height: 0,
+                color: fillColor,
+                stroke: strokeColor,
+                shape: "square",
+                createdAt: Date.now(),
+              };
               break;
             case "circle":
-              setCircles([
-                ...circles,
-                {
-                  id,
-                  x,
-                  y,
-                  radius: 0,
-                  color: fillColor,
-                  stroke: strokeColor,
-                },
-              ]);
+              newShape = {
+                id,
+                x,
+                y,
+                radius: 0,
+                color: fillColor,
+                stroke: strokeColor,
+                shape: "circle",
+                createdAt: Date.now(),
+              };
               break;
             case "pencil":
-              setLines((lines) => [
-                ...lines,
-                {
-                  id,
-                  points: [x, y],
-                  stroke: fillColor,
-                  fill: fillColor,
-                },
-              ]);
+              newShape = {
+                id,
+                points: [x, y],
+                stroke: fillColor,
+                fill: fillColor,
+                shape: "line",
+                createdAt: Date.now(),
+              };
               break;
             default:
               return;
           }
+
+          setShapes((prevShapes) => [...prevShapes, newShape]);
         } else {
-          const shape = stage.getIntersection(stage.getPointerPosition());
-          if (shape) {
-            if (shape.id() === "bg") {
-              shape.destroy();
-            } else {
-              shape.remove();
-            }
+          const shapePointer = stage.getPointerPosition() as Konva.Vector2d;
+          const shape = stage.getIntersection(shapePointer);
+          if (shape && shape.id() !== "bg") {
+            shape.remove();
+            removeShape(String(boardId), shape.id());
           }
         }
       }
@@ -94,62 +174,86 @@ const Whiteboard = forwardRef<Konva.Transformer, WhiteboardProps>(
       if (!isDrawing.current) return;
 
       const stage = stageRef.current;
-      if (stage) {
-        if (instrument.name !== "eraser") {
-          const { x, y } = stage.getPointerPosition();
+      if (!stage) return;
+      if (instrument.name === "eraser") return;
+      const { x, y } = stage.getPointerPosition();
 
-          switch (instrument.name) {
-            case "square":
-              setRectangles((rectangles) =>
-                rectangles.map((rectangle) => {
-                  if (rectangle.id === currentShapeId.current) {
-                    const width = x - rectangle.x;
-                    const height = y - rectangle.y;
-                    return {
-                      ...rectangle,
-                      width,
-                      height,
-                    };
-                  }
-                  return rectangle;
-                }),
-              );
-              break;
-            case "circle":
-              setCircles((circles) =>
-                circles.map((circle) => {
-                  if (circle.id === currentShapeId.current) {
-                    return {
-                      ...circle,
-                      radius:
-                        ((x - circle.x) ** 2 + (y - circle.y) ** 2) ** 0.5,
-                    };
-                  }
-                  return circle;
-                }),
-              );
-              break;
-            case "pencil":
-              setLines((lines) =>
-                lines.map((line) => {
-                  if (line.id === currentShapeId.current) {
-                    return {
-                      ...line,
-                      points: [...line.points, x, y],
-                    };
-                  }
-                  return line;
-                }),
-              );
-              break;
-            default:
-              return;
-          }
-        }
+      switch (instrument.name) {
+        case "square":
+          setShapes((prevShapes) => {
+            const index = prevShapes.findIndex(
+              (shape) => shape.id === currentShapeId.current,
+            );
+            const newShapes = [...prevShapes];
+            newShapes[index] = {
+              ...newShapes[index],
+              width: x - newShapes[index].x,
+              height: y - newShapes[index].y,
+            };
+            return newShapes;
+          });
+          break;
+        case "circle":
+          setShapes((prevShapes) => {
+            const index = prevShapes.findIndex(
+              (shape) => shape.id === currentShapeId.current,
+            );
+            const newShapes = [...prevShapes];
+            newShapes[index] = {
+              ...newShapes[index],
+              radius: Math.sqrt(
+                Math.pow(x - newShapes[index].x, 2) +
+                  Math.pow(y - newShapes[index].y, 2),
+              ),
+            };
+            return newShapes;
+          });
+          break;
+        case "pencil":
+          setShapes((prevShapes) => {
+            const index = prevShapes.findIndex(
+              (shape) => shape.id === currentShapeId.current,
+            );
+            const newShapes = [...prevShapes];
+            newShapes[index] = {
+              ...newShapes[index],
+              points: [...newShapes[index].points, x, y],
+            };
+            return newShapes;
+          });
+          break;
+        default:
+          return;
       }
     };
 
     const onPointerUp = () => {
+      if (!isDrawing.current) return;
+
+      const stage = stageRef.current;
+      if (!stage) return;
+      if (instrument.name === "eraser") return;
+      const { x, y } = stage.getPointerPosition();
+
+      const shapeUpdates = {
+        square: (shape) => ({
+          ...shape,
+          width: x - shape.x,
+          height: y - shape.y,
+        }),
+        circle: (shape) => ({
+          ...shape,
+          radius: Math.sqrt(
+            Math.pow(x - shape.x, 2) + Math.pow(y - shape.y, 2),
+          ),
+        }),
+        pencil: (shape) => ({ ...shape, points: [...shape.points, x, y] }),
+      };
+
+      if (shapeUpdates[instrument.name]) {
+        updateShape(instrument.name, shapeUpdates[instrument.name]);
+      }
+
       isDrawing.current = false;
     };
 
@@ -188,11 +292,8 @@ const Whiteboard = forwardRef<Konva.Transformer, WhiteboardProps>(
             <Figures
               instrument={instrument}
               handleClick={handleClick}
-              rectangles={rectangles}
-              circles={circles}
-              lines={lines}
+              shapes={shapes}
             />
-            <Transformer ref={ref} />
           </Layer>
         </Stage>
       </div>

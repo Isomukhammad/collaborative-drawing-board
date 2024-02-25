@@ -7,5 +7,9 @@
 }
 
 .custom-button {
-  @apply w-full rounded bg-blue-600 px-4 py-2 font-bold text-white hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50;
+  @apply w-full rounded bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50;
+}
+
+.custom-button-error {
+  @apply rounded-md bg-red-500 p-2 font-semibold text-white hover:bg-red-600 active:bg-red-700;
 }

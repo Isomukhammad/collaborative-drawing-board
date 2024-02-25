@@ -1,34 +1,53 @@
+import { off, onChildAdded, onChildRemoved, ref } from "firebase/database";
 import { Link } from "react-router-dom";
 
-import { JSX } from "react";
+import { JSX, useEffect, useState } from "react";
 
-const list = [
-  {
-    id: 0,
-    name: "Board 1",
-    createdAt: "2021-09-01",
-  },
-  {
-    id: 1,
-    name: "Board 2",
-    createdAt: "2021-09-02",
-  },
-  {
-    id: 2,
-    name: "Board 3",
-    createdAt: "2021-09-03",
-  },
-];
+import Modal from "../components/Modal.tsx";
+import { realtimeDatabase } from "../firebase/firebase.ts";
+import { deleteBoard, getBoards } from "../firebase/requests.ts";
+import { IBoard } from "../types.ts";
 
 const MainPage = (): JSX.Element => {
+  const [boards, setBoards] = useState<IBoard[]>([]);
+
+  useEffect(() => {
+    const boardsRef = ref(realtimeDatabase, "boards");
+
+    getBoards().then((data) => setBoards(data));
+    const handleBoardAdded = (snapshot) => {
+      const board = { id: snapshot.key, ...snapshot.val() };
+      setBoards((prevBoards) => [board, ...prevBoards]);
+    };
+    const handleBoardRemoved = (snapshot) => {
+      setBoards((prevBoards) =>
+        prevBoards.filter((board) => board.id !== snapshot.key),
+      );
+    };
+
+    onChildAdded(boardsRef, handleBoardAdded);
+    onChildRemoved(boardsRef, handleBoardRemoved);
+
+    return () => {
+      off(boardsRef, "child_added", handleBoardAdded);
+      off(boardsRef, "child_removed", handleBoardRemoved);
+    };
+  }, []);
+
   return (
     <main className={"container mx-auto space-y-6 px-5 py-6"}>
-      <h2 className={"text-lg font-medium text-neutral-500"}>
-        There are <span className={"text-green-600"}>{list.length} boards</span>{" "}
-        available to join
-      </h2>
+      <div className={"flex items-center justify-between"}>
+        <h2 className={"text-lg font-medium text-neutral-500"}>
+          There are{" "}
+          <span className={"text-green-600"}>{boards.length} boards</span>{" "}
+          available to join
+        </h2>
+        <Modal />
+      </div>
       <ul className={"space-y-3"}>
-        {list.map((item) => {
+        {boards.map((item) => {
+          const createdAt = new Date(item.createdAt).toLocaleString();
+
           return (
             <li
               key={item.id}
@@ -36,16 +55,21 @@ const MainPage = (): JSX.Element => {
                 "flex items-center justify-between rounded-md border border-neutral-300 px-2 font-medium"
               }
             >
-              <Link to={"/board/1"} className={"block flex-1 py-5"}>
-                {item.name}
+              <Link
+                to={`/board/${item.name}`}
+                className={"flex flex-1 flex-col py-5"}
+              >
+                <span className={"text-lg"}>{item.name}</span>{" "}
+                <span className={"text-sm text-neutral-400"}>
+                  Created by: {item.createdBy}
+                </span>
               </Link>
               <div className={"flex items-center gap-2"}>
-                <p>Created at: {item.createdAt}</p>
+                <p>Created at: {createdAt}</p>
                 <button
                   type={"button"}
-                  className={
-                    "rounded-md bg-red-500 p-2 text-white hover:bg-red-600 active:bg-red-700"
-                  }
+                  onClick={() => deleteBoard(item.id)}
+                  className={"custom-button-error"}
                 >
                   Delete
                 </button>

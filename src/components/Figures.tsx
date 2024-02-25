@@ -4,70 +4,68 @@ import { Circle, Line, Rect } from "react-konva";
 import { JSX } from "react";
 
 import { IInstrument } from "../constant.ts";
-import { ICircle, ILine, IRectangle } from "../reducer.ts";
+import { ICircle, ILine, IRectangle } from "../types.ts";
 
 interface FiguresProps {
   instrument: IInstrument;
   handleClick: (event: Konva.KonvaEventObject<MouseEvent>) => void;
-  rectangles: IRectangle[] | [];
-  circles: ICircle[] | [];
-  lines: ILine[] | [];
+  shapes: IRectangle[] | ICircle[] | ILine[] | [];
 }
 
 const Figures = ({
   instrument,
   handleClick,
-  rectangles,
-  circles,
-  lines,
+  shapes,
 }: FiguresProps): JSX.Element => {
   return (
     <>
-      {rectangles.map((rectangle) => {
-        return (
-          <Rect
-            key={rectangle.id}
-            x={rectangle.x}
-            y={rectangle.y}
-            stroke={rectangle.stroke}
-            strokeWidth={2}
-            fill={rectangle.color}
-            height={rectangle.height}
-            width={rectangle.width}
-            draggable={instrument.name === "select"}
-            onClick={handleClick}
-          />
-        );
-      })}
-      {circles.map((circle) => {
-        return (
-          <Circle
-            key={circle.id}
-            x={circle.x}
-            y={circle.y}
-            radius={circle.radius}
-            stroke={circle.stroke}
-            strokeWidth={2}
-            fill={circle.color}
-            draggable={instrument.name === "select"}
-            onClick={handleClick}
-          />
-        );
-      })}
-      {lines.map((line) => {
-        return (
-          <Line
-            key={line.id}
-            lineCap={"round"}
-            lineJoin={"round"}
-            points={line.points}
-            stroke={line.stroke}
-            strokeWidth={2}
-            fill={line.fill}
-            draggable={instrument.name === "select"}
-            onClick={handleClick}
-          />
-        );
+      {shapes.map((shape: IRectangle | ICircle | ILine) => {
+        if ("height" in shape && "width" in shape) {
+          return (
+            <Rect
+              key={shape.id}
+              x={shape.x}
+              y={shape.y}
+              stroke={shape.stroke}
+              strokeWidth={2}
+              fill={shape.color}
+              height={shape.height}
+              width={shape.width}
+              draggable={instrument.name === "select"}
+              onClick={handleClick}
+            />
+          );
+        } else if ("radius" in shape) {
+          return (
+            <Circle
+              key={shape.id}
+              x={shape.x}
+              y={shape.y}
+              radius={shape.radius}
+              stroke={shape.stroke}
+              strokeWidth={2}
+              fill={shape.color}
+              draggable={instrument.name === "select"}
+              onClick={handleClick}
+            />
+          );
+        } else if ("points" in shape) {
+          return (
+            <Line
+              key={shape.id}
+              lineCap={"round"}
+              lineJoin={"round"}
+              points={shape.points}
+              stroke={shape.stroke}
+              strokeWidth={2}
+              fill={shape.fill}
+              draggable={instrument.name === "select"}
+              onClick={handleClick}
+            />
+          );
+        } else {
+          return null;
+        }
       })}
     </>
   );

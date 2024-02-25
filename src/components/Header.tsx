@@ -2,7 +2,11 @@ import { Link } from "react-router-dom";
 
 import { JSX } from "react";
 
-const Header = ({ name }: { name: string }): JSX.Element => {
+import { useName } from "../context/nameContext.tsx";
+
+const Header = (): JSX.Element => {
+  const { name } = useName();
+
   return (
     <header className={"rounded-b-xl bg-white shadow"}>
       <div

@@ -1,6 +1,6 @@
 import { JSX, SVGProps } from "react";
 
-export type ISprites = "eraser" | "circle" | "pencil" | "square" | "select";
+export type ISprites = "circle" | "pencil" | "square" | "select";
 interface IconProps extends Omit<SVGProps<SVGSVGElement>, "name"> {
   name: ISprites;
   className?: string;

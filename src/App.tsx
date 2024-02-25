@@ -1,26 +1,23 @@
 import { Route, Routes } from "react-router-dom";
 
-import { JSX, useState } from "react";
+import { JSX } from "react";
 
 import Header from "./components/Header.tsx";
 import NameModal from "./components/NameModal.tsx";
+import { NameProvider } from "./context/nameContext.tsx";
 import BoardPage from "./pages/Board.tsx";
 import MainPage from "./pages/Main.tsx";
 
 const App = (): JSX.Element => {
-  const [name, setName] = useState<string>(
-    sessionStorage.getItem("username") ?? "",
-  );
-
   return (
-    <>
-      <Header name={name} />
+    <NameProvider>
+      <Header />
       <Routes>
         <Route path={"/"} element={<MainPage />} />
         <Route path={"/board/:id"} element={<BoardPage />} />
       </Routes>
-      <NameModal name={name} setName={setName} />
-    </>
+      <NameModal />
+    </NameProvider>
   );
 };
 
